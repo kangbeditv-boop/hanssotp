@@ -53,10 +53,50 @@ async function pollOtpStatus(io) {
 
           logger.info({ orderId: order.id, otp: result.otpCode }, 'OTP received');
         } else if (['cancelled', 'error'].includes(result.status)) {
-          await pool.query(
-            "UPDATE otp_orders SET status = ?, provider_status = ? WHERE id = ?",
-            [result.status === 'error' ? 'error' : 'cancelled', result.status, order.id]
-          );
+          const conn = await pool.getConnection();
+          try {
+            await conn.beginTransaction();
+
+            const newStatus = result.status === 'error' ? 'error' : 'cancelled';
+            await conn.query(
+              "UPDATE otp_orders SET status = ?, provider_status = ? WHERE id = ?",
+              [newStatus, result.status, order.id]
+            );
+
+            const [userRow] = await conn.query('SELECT balance FROM users WHERE id = ?', [order.user_id]);
+            const balanceBefore = parseFloat(userRow[0].balance);
+            const balanceAfter = balanceBefore + parseFloat(order.price);
+
+            await conn.query('UPDATE users SET balance = balance + ? WHERE id = ?', [order.price, order.user_id]);
+
+            await conn.query(
+              `INSERT INTO transactions (user_id, type, amount, balance_before, balance_after, reference_type, reference_id, description)
+               VALUES (?, 'refund', ?, ?, ?, 'order', ?, ?)`,
+              [order.user_id, order.price, balanceBefore, balanceAfter, order.id, `Auto refund - Provider ${newStatus}`]
+            );
+
+            await conn.query(
+              "INSERT INTO otp_order_logs (order_id, action, details) VALUES (?, 'provider_cancelled', ?)",
+              [order.id, JSON.stringify({ status: result.status, reason: `Provider reported ${newStatus}` })]
+            );
+
+            await conn.commit();
+
+            if (io) {
+              io.to(`user:${order.user_id}`).emit('order:cancelled', {
+                order_id: order.id,
+                refund_amount: order.price,
+                reason: `Provider ${newStatus}`,
+              });
+            }
+
+            logger.info({ orderId: order.id, status: newStatus }, 'Order cancelled by provider, user refunded');
+          } catch (refundErr) {
+            await conn.rollback();
+            logger.error({ err: refundErr, orderId: order.id }, 'Error refunding provider-cancelled order');
+          } finally {
+            conn.release();
+          }
         }
       } catch (err) {
         logger.error({ err, orderId: order.id }, 'Error polling OTP status');

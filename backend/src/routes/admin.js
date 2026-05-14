@@ -296,7 +296,8 @@ router.post('/refund', validate(refundSchema), async (req, res, next) => {
     if (orders.length === 0) throw new NotFoundError('Order tidak ditemukan');
 
     const order = orders[0];
-    if (order.status === 'refunded') throw new BadRequestError('Order sudah di-refund');
+    if (['refunded', 'cancelled', 'expired'].includes(order.status))
+      throw new BadRequestError('Order sudah di-refund atau dibatalkan');
 
     const [user] = await connection.query('SELECT balance FROM users WHERE id = ?', [order.user_id]);
     const balanceBefore = parseFloat(user[0].balance);

@@ -33,11 +33,13 @@ router.get('/services', async (req, res, next) => {
     const params = [];
 
     if (countryId) {
-      query += ' WHERE op.country_id = ?';
+      query += ' WHERE op.country_id = ? AND os.is_active = 1';
       params.push(countryId);
+    } else {
+      query += ' WHERE os.is_active = 1';
     }
 
-    query += ' AND os.is_active = 1 ORDER BY os.sort_order ASC, os.name ASC';
+    query += ' ORDER BY os.sort_order ASC, os.name ASC';
 
     const [services] = await pool.query(query, params);
     res.json({ success: true, data: services });
@@ -164,13 +166,19 @@ router.post('/order', authMiddleware, validate(orderOtpSchema), async (req, res,
     const pricing = pricingRows[0];
     const sellPrice = parseFloat(pricing.sell_price);
 
-    if (parseFloat(user.balance) < sellPrice) {
+    await connection.beginTransaction();
+
+    const [lockedUser] = await connection.query(
+      'SELECT balance FROM users WHERE id = ? FOR UPDATE',
+      [userId]
+    );
+    const balanceBefore = parseFloat(lockedUser[0].balance);
+
+    if (balanceBefore < sellPrice) {
+      await connection.rollback();
       throw new BadRequestError(`Saldo tidak cukup. Dibutuhkan Rp${sellPrice.toLocaleString('id-ID')}`);
     }
 
-    await connection.beginTransaction();
-
-    const balanceBefore = parseFloat(user.balance);
     const balanceAfter = balanceBefore - sellPrice;
 
     await connection.query('UPDATE users SET balance = balance - ?, total_order = total_order + 1 WHERE id = ?', [

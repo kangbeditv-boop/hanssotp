@@ -442,7 +442,7 @@ CREATE TABLE pricing_history (
 
 -- Default admin
 INSERT INTO admins (username, email, password, role) VALUES
-('admin', 'admin@otpservice.com', '$2a$12$LJ3m4ys3Gk.ZG2gPvO1iZeXsEqOMflwzEFG2V3xFrLZNEfVqpUlW2', 'superadmin');
+('admin', 'admin@otpservice.com', '$2a$12$HfLpotd6hcCM/MnM9XI1mO27hYcqaMfY6TuElOJGp8VwQz8lsLREW', 'superadmin');
 -- Default password: admin123 (change immediately)
 
 -- Payment gateways

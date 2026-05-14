@@ -124,14 +124,19 @@ router.post('/order', validate(orderOtpSchema), async (req, res, next) => {
     const pricing = pricingRows[0];
     const sellPrice = parseFloat(pricing.sell_price);
 
-    const [userRow] = await connection.query('SELECT balance FROM users WHERE id = ?', [userId]);
-    if (parseFloat(userRow[0].balance) < sellPrice) {
+    await connection.beginTransaction();
+
+    const [lockedUser] = await connection.query(
+      'SELECT balance FROM users WHERE id = ? FOR UPDATE',
+      [userId]
+    );
+    const balanceBefore = parseFloat(lockedUser[0].balance);
+
+    if (balanceBefore < sellPrice) {
+      await connection.rollback();
       throw new BadRequestError('Insufficient balance');
     }
 
-    await connection.beginTransaction();
-
-    const balanceBefore = parseFloat(userRow[0].balance);
     const balanceAfter = balanceBefore - sellPrice;
 
     await connection.query('UPDATE users SET balance = balance - ?, total_order = total_order + 1 WHERE id = ?', [
