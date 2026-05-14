@@ -126,5 +126,6 @@ async function processWebhook(gatewayCode, req, res) {
 
 router.post('/tripay', (req, res) => processWebhook('tripay', req, res));
 router.post('/qrispy', (req, res) => processWebhook('qrispy', req, res));
+router.post('/pakasir', (req, res) => processWebhook('pakasir', req, res));
 
 module.exports = router;

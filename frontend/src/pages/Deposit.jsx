@@ -65,6 +65,7 @@ export default function Deposit() {
                 <select className="input-field" value={gateway} onChange={(e) => setGateway(e.target.value)}>
                   <option value="tripay">Tripay (QRIS)</option>
                   <option value="qrispy">QRISPY (QRIS)</option>
+                  <option value="pakasir">Pakasir (QRIS/VA)</option>
                 </select>
               </div>
 

@@ -37,7 +37,7 @@ Platform fullstack untuk layanan OTP dan virtual number, mirip seperti rumahotp.
 
 ### Fitur Tambahan
 - Provider adapter pattern (5sim, HeroSMS, Nokosmurah)
-- Payment gateway adapter (Tripay, QRISPY)
+- Payment gateway adapter (Tripay, QRISPY, Pakasir)
 - Auto cancel/refund expired orders (15 menit)
 - OTP polling setiap 15 detik
 - Auto pricing berdasarkan demand
@@ -176,6 +176,12 @@ Akses admin panel: `https://yourdomain.com/admin/login`
 3. Set webhook callback URL: `https://yourdomain.com/api/webhooks/qrispy`
 4. Isi di Settings admin atau `.env`
 
+#### Pakasir
+1. Daftar di [pakasir.com](https://pakasir.com)
+2. Buat Project dan dapatkan Net Key
+3. Set webhook callback URL: `https://yourdomain.com/api/webhooks/pakasir` pada Project di Pakasir
+4. Isi `PAKASIR_PROJECT`, `PAKASIR_NET_KEY`, dan `PAKASIR_MODE` di Settings admin atau `.env`
+
 ### OTP Provider
 
 #### 5sim.net
@@ -183,7 +189,13 @@ Akses admin panel: `https://yourdomain.com/admin/login`
 2. Dapatkan API Token dari profile
 3. Isi di Settings admin atau `.env`
 
-#### HeroSMS & Nokosmurah
+#### HeroSMS
+1. Daftar di [hero-sms.com](https://hero-sms.com)
+2. Dapatkan API Key dari dashboard
+3. API menggunakan protokol SMS-Activate compatible
+4. Isi di Settings admin atau `.env`
+
+#### Nokosmurah
 1. Daftar dan dapatkan API key
 2. Isi di Settings admin atau `.env`
 
