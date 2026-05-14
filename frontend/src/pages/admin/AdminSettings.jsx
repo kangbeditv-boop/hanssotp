@@ -40,7 +40,7 @@ export default function AdminSettings() {
 
   const groups = {
     'Website': ['site_name', 'site_logo', 'site_description', 'default_theme', 'default_language'],
-    'API Keys - Payment': ['tripay_api_key', 'tripay_private_key', 'tripay_merchant_code', 'tripay_mode', 'qrispy_api_key', 'qrispy_merchant_id'],
+    'API Keys - Payment': ['tripay_api_key', 'tripay_private_key', 'tripay_merchant_code', 'tripay_mode', 'qrispy_api_key', 'qrispy_merchant_id', 'pakasir_project', 'pakasir_net_key', 'pakasir_mode'],
     'API Keys - OTP Provider': ['fivesim_api_key', 'herosms_api_key', 'nokosmurah_api_key'],
     'Telegram': ['telegram_bot_token', 'telegram_admin_chat_id'],
     'Auto Pricing': ['auto_pricing_enabled', 'demand_threshold', 'demand_markup_increment'],
