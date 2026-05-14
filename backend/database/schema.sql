@@ -453,7 +453,7 @@ INSERT INTO payment_gateways (code, name, is_active) VALUES
 -- OTP providers
 INSERT INTO otp_providers (code, name, api_base_url, is_active, priority) VALUES
 ('5sim', '5sim.net', 'https://5sim.net/v1', 1, 1),
-('herosms', 'Hero SMS', 'https://api.herosms.com/v1', 1, 2),
+('herosms', 'Hero SMS', 'https://hero-sms.com/stubs/handler_api.php', 1, 2),
 ('nokosmurah', 'Nokosmurah', 'https://api.nokosmurah.com/v1', 1, 3);
 
 -- Default website settings
