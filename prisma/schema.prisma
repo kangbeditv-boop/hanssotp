@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          Role      @default(USER)
+  isBanned      Boolean   @default(false)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?
+  referralCode  String?   @unique
+  referredById  String?
+  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]    @relation("Referrals")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  wallet        Wallet?
+  otpOrders     OtpOrder[]
+  smmOrders     SmmOrder[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  resellerAccount ResellerAccount?
+  vouchers      Voucher[]
+  topups        Topup[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+enum Role {
+  USER
+  RESELLER
+  ADMIN
+  SUPERADMIN
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  @@map("wallets")
+}
+
+model Transaction {
+  id            String          @id @default(cuid())
+  walletId      String
+  type          TransactionType
+  amount        Decimal         @db.Decimal(15, 2)
+  balanceBefore Decimal         @db.Decimal(15, 2)
+  balanceAfter  Decimal         @db.Decimal(15, 2)
+  description   String?
+  referenceId   String?
+  referenceType String?
+  createdAt     DateTime        @default(now())
+  wallet Wallet @relation(fields: [walletId], references: [id])
+  @@index([walletId])
+  @@index([referenceId])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  TOPUP
+  PURCHASE
+  REFUND
+  BONUS
+  COMMISSION
+  ADMIN_ADJUST
+}
+
+model SmsProvider {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  slug          String   @unique
+  baseUrl       String
+  apiKey        String
+  isActive      Boolean  @default(true)
+  markupPercent Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  otpOrders OtpOrder[]
+  @@map("sms_providers")
+}
+
+model OtpOrder {
+  id            String    @id @default(cuid())
+  userId        String
+  providerId    String
+  externalId    String?
+  phoneNumber   String?
+  country       String
+  countryCode   String?
+  service       String
+  serviceName   String?
+  operator      String?
+  price         Decimal   @db.Decimal(15, 2)
+  providerPrice Decimal?  @db.Decimal(15, 2)
+  status        OtpStatus @default(PENDING)
+  smsCode       String?
+  smsText       String?
+  expiresAt     DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user     User        @relation(fields: [userId], references: [id])
+  provider SmsProvider @relation(fields: [providerId], references: [id])
+  @@index([userId])
+  @@index([status])
+  @@map("otp_orders")
+}
+
+enum OtpStatus {
+  PENDING
+  WAITING
+  RECEIVED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+model SmmProvider {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  url           String
+  apiKey        String
+  isActive      Boolean  @default(true)
+  markupPercent Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  services SmmService[]
+  orders   SmmOrder[]
+  @@map("smm_providers")
+}
+
+model SmmService {
+  id         String   @id @default(cuid())
+  providerId String
+  externalId String
+  name       String
+  category   String
+  rate       Decimal  @db.Decimal(15, 4)
+  minQty     Int
+  maxQty     Int
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  provider SmmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  orders   SmmOrder[]
+  @@unique([providerId, externalId])
+  @@map("smm_services")
+}
+
+model SmmOrder {
+  id              String         @id @default(cuid())
+  userId          String
+  serviceId       String
+  providerId      String
+  externalOrderId String?
+  link            String
+  quantity        Int
+  charge          Decimal        @db.Decimal(15, 2)
+  providerCharge  Decimal?       @db.Decimal(15, 2)
+  status          SmmOrderStatus @default(PENDING)
+  remains         Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  user     User        @relation(fields: [userId], references: [id])
+  service  SmmService  @relation(fields: [serviceId], references: [id])
+  provider SmmProvider @relation(fields: [providerId], references: [id])
+  @@index([userId])
+  @@index([status])
+  @@map("smm_orders")
+}
+
+enum SmmOrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  PARTIAL
+  CANCELLED
+  REFUNDED
+}
+
+model Topup {
+  id          String      @id @default(cuid())
+  userId      String
+  amount      Decimal     @db.Decimal(15, 2)
+  bonusAmount Decimal     @default(0) @db.Decimal(15, 2)
+  totalAmount Decimal     @db.Decimal(15, 2)
+  method      String?
+  invoiceId   String?     @unique
+  paymentUrl  String?
+  qrisUrl     String?
+  status      TopupStatus @default(PENDING)
+  paidAt      DateTime?
+  expiredAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([invoiceId])
+  @@map("topups")
+}
+
+enum TopupStatus {
+  PENDING
+  PAID
+  EXPIRED
+  FAILED
+}
+
+model ResellerTier {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  minBalance      Decimal  @db.Decimal(15, 2)
+  discountPercent Decimal  @db.Decimal(5, 2)
+  markupReduction Decimal  @default(0) @db.Decimal(5, 2)
+  isManualApprove Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  resellerAccounts ResellerAccount[]
+  @@map("reseller_tiers")
+}
+
+model ResellerAccount {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  tierId           String
+  isApproved       Boolean  @default(false)
+  totalSales       Decimal  @default(0) @db.Decimal(15, 2)
+  totalCommission  Decimal  @default(0) @db.Decimal(15, 2)
+  whitelistDomains String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user     User         @relation(fields: [userId], references: [id])
+  tier     ResellerTier @relation(fields: [tierId], references: [id])
+  vouchers Voucher[]
+  @@map("reseller_accounts")
+}
+
+model Voucher {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  resellerId String?
+  userId     String?
+  amount     Decimal   @db.Decimal(15, 2)
+  isUsed     Boolean   @default(false)
+  usedById   String?
+  usedAt     DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  reseller ResellerAccount? @relation(fields: [resellerId], references: [id])
+  user     User?            @relation(fields: [userId], references: [id])
+  @@map("vouchers")
+}
+
+model ApiKey {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  key          String    @unique
+  encryptedKey String
+  lastUsedAt   DateTime?
+  ipWhitelist  String[]  @default([])
+  isActive     Boolean   @default(true)
+  rateLimit    Int       @default(60)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([key])
+  @@map("api_keys")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("notifications")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  group     String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("settings")
+}
