@@ -29,6 +29,10 @@ module.exports = {
     apiKey: process.env.QRISPY_API_KEY || '',
     merchantId: process.env.QRISPY_MERCHANT_ID || '',
   },
+  pakasir: {
+    apiKey: process.env.PAKASIR_API_KEY || '',
+    slug: process.env.PAKASIR_SLUG || '',
+  },
   fivesim: {
     apiKey: process.env.FIVESIM_API_KEY || '',
   },

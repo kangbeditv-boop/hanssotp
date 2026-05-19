@@ -448,7 +448,8 @@ INSERT INTO admins (username, email, password, role) VALUES
 -- Payment gateways
 INSERT INTO payment_gateways (code, name, is_active) VALUES
 ('tripay', 'Tripay', 1),
-('qrispy', 'QRISPY', 1);
+('qrispy', 'QRISPY', 1),
+('pakasir', 'Pakasir', 1);
 
 -- OTP providers
 INSERT INTO otp_providers (code, name, api_base_url, is_active, priority) VALUES
@@ -476,6 +477,8 @@ INSERT INTO website_settings (setting_key, setting_value, setting_type, descript
 ('tripay_mode', 'sandbox', 'text', 'Mode Tripay (sandbox/production)'),
 ('qrispy_api_key', '', 'text', 'API Key QRISPY'),
 ('qrispy_merchant_id', '', 'text', 'Merchant ID QRISPY'),
+('pakasir_api_key', '', 'text', 'API Key Pakasir'),
+('pakasir_slug', '', 'text', 'Slug Proyek Pakasir'),
 ('fivesim_api_key', '', 'text', 'API Key 5sim.net'),
 ('herosms_api_key', '', 'text', 'API Key Hero SMS'),
 ('nokosmurah_api_key', '', 'text', 'API Key Nokosmurah'),
