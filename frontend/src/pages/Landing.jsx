@@ -35,23 +35,25 @@ function AnimatedCounter({ target, duration = 2000, suffix = '' }) {
 function OtpDemoAnimation() {
   const [step, setStep] = useState(0);
   const otpCode = '482916';
+  const timeoutIds = useRef([]);
 
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setStep(1), 1000),
-      setTimeout(() => setStep(2), 2500),
-      setTimeout(() => setStep(3), 4000),
-      setTimeout(() => setStep(4), 5500),
-      setTimeout(() => setStep(0), 8000),
-    ];
+    function scheduleSteps() {
+      timeoutIds.current.push(setTimeout(() => setStep(1), 1000));
+      timeoutIds.current.push(setTimeout(() => setStep(2), 2500));
+      timeoutIds.current.push(setTimeout(() => setStep(3), 4000));
+      timeoutIds.current.push(setTimeout(() => setStep(4), 5500));
+    }
+    scheduleSteps();
     const loop = setInterval(() => {
       setStep(0);
-      setTimeout(() => setStep(1), 1000);
-      setTimeout(() => setStep(2), 2500);
-      setTimeout(() => setStep(3), 4000);
-      setTimeout(() => setStep(4), 5500);
+      scheduleSteps();
     }, 8000);
-    return () => { timers.forEach(clearTimeout); clearInterval(loop); };
+    return () => {
+      timeoutIds.current.forEach(clearTimeout);
+      timeoutIds.current = [];
+      clearInterval(loop);
+    };
   }, []);
 
   return (
