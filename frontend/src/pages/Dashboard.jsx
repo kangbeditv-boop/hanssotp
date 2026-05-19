@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { HiCurrencyDollar, HiTrendingUp, HiClipboardList, HiPhone } from 'react-icons/hi';
+import { HiCurrencyDollar, HiTrendingUp, HiClipboardList, HiPhone, HiCheckCircle } from 'react-icons/hi';
 import api from '../utils/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSocket } from '../hooks/useSocket';
 import Layout from '../components/Layout';
-import Sidebar from '../components/Sidebar';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { StatSkeleton, TableSkeleton } from '../components/LoadingSkeleton';
 import { formatCurrency, formatDate, getStatusBadgeClass } from '../utils/format';
 
 export default function Dashboard() {
@@ -31,7 +30,18 @@ export default function Dashboard() {
     }
   }
 
-  if (loading) return <Layout showSidebar><LoadingSpinner /></Layout>;
+  if (loading) {
+    return (
+      <Layout showSidebar>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('dashboard.title')}</h1>
+        <StatSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          <div className="card"><TableSkeleton /></div>
+          <div className="card"><TableSkeleton /></div>
+        </div>
+      </Layout>
+    );
+  }
 
   const stats = [
     { label: t('dashboard.balance'), value: formatCurrency(data?.balance || 0), icon: HiCurrencyDollar, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
@@ -46,7 +56,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, i) => (
-          <div key={i} className="stat-card">
+          <div key={i} className="stat-card hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</span>
               <div className={`p-2 rounded-lg ${stat.bg}`}>
