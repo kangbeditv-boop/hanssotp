@@ -1,12 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { HiPhone, HiClipboard, HiRefresh, HiX } from 'react-icons/hi';
+import { HiPhone, HiClipboard, HiRefresh, HiX, HiSearch } from 'react-icons/hi';
 import api from '../utils/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSocketEvent } from '../hooks/useSocket';
 import Layout from '../components/Layout';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { CardSkeleton } from '../components/LoadingSkeleton';
 import { formatCurrency, formatCountdown, getStatusBadgeClass } from '../utils/format';
+
+function StockIndicator({ stock }) {
+  if (stock === undefined || stock === null) return null;
+  const level = stock > 500 ? 'high' : stock > 100 ? 'medium' : 'low';
+  const colors = {
+    high: 'bg-green-500',
+    medium: 'bg-yellow-500',
+    low: 'bg-red-500',
+  };
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+      <span className={`w-2 h-2 rounded-full ${colors[level]}`} />
+      {stock.toLocaleString()}
+    </span>
+  );
+}
+
+function SuccessRateBadge({ rate }) {
+  if (rate === undefined || rate === null) return null;
+  const pct = Number(rate);
+  const color = pct >= 90 ? 'text-green-500' : pct >= 70 ? 'text-yellow-500' : 'text-red-500';
+  return (
+    <span className={`text-xs font-medium ${color}`}>
+      {pct}%
+    </span>
+  );
+}
 
 export default function OrderOtp() {
   const [countries, setCountries] = useState([]);
@@ -18,6 +45,8 @@ export default function OrderOtp() {
   const [ordering, setOrdering] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
   const [countdown, setCountdown] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -115,6 +144,14 @@ export default function OrderOtp() {
     toast.success(t('common.copy_success'));
   }
 
+  const filteredCountries = countries.filter((c) =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
+  const filteredServices = services.filter((s) =>
+    s.name.toLowerCase().includes(serviceSearch.toLowerCase())
+  );
+
   return (
     <Layout showSidebar>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{t('otp.title')}</h1>
@@ -169,7 +206,7 @@ export default function OrderOtp() {
                 )}
                 {activeOrder.status === 'received' && (
                   <button onClick={() => setActiveOrder(null)} className="btn-primary w-full">
-                    Order Lagi
+                    {t('otp.order_again')}
                   </button>
                 )}
               </div>
@@ -179,43 +216,113 @@ export default function OrderOtp() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-4">
+            {/* Country Selection */}
             <div className="card">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('otp.select_country')}</label>
-              <select className="input-field" value={selectedCountry} onChange={(e) => { setSelectedCountry(e.target.value); setSelectedService(''); setPricing([]); }}>
-                <option value="">{t('otp.select_country')}</option>
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>{c.flag_emoji} {c.name}</option>
+              <div className="relative mb-3">
+                <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="text"
+                  className="input-field !pl-9 text-sm"
+                  placeholder={t('otp.search_country')}
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                />
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {filteredCountries.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => { setSelectedCountry(String(c.id)); setSelectedService(''); setPricing([]); setServiceSearch(''); }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-colors ${
+                      String(c.id) === selectedCountry
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-lg">{c.flag_emoji}</span>
+                      <span>{c.name}</span>
+                    </span>
+                    {c.stock !== undefined && <StockIndicator stock={c.stock} />}
+                  </button>
                 ))}
-              </select>
+                {filteredCountries.length === 0 && (
+                  <p className="text-sm text-gray-400 text-center py-3">{t('common.no_data')}</p>
+                )}
+              </div>
             </div>
 
+            {/* Service Selection */}
             {selectedCountry && (
               <div className="card">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('otp.select_service')}</label>
-                <select className="input-field" value={selectedService} onChange={(e) => setSelectedService(e.target.value)}>
-                  <option value="">{t('otp.select_service')}</option>
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                <div className="relative mb-3">
+                  <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="text"
+                    className="input-field !pl-9 text-sm"
+                    placeholder={t('otp.search_service')}
+                    value={serviceSearch}
+                    onChange={(e) => setServiceSearch(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-1">
+                  {filteredServices.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedService(String(s.id))}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-colors ${
+                        String(s.id) === selectedService
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <span>{s.name}</span>
+                      <div className="flex items-center gap-2">
+                        {s.success_rate !== undefined && <SuccessRateBadge rate={s.success_rate} />}
+                        {s.stock !== undefined && <StockIndicator stock={s.stock} />}
+                      </div>
+                    </button>
                   ))}
-                </select>
+                  {filteredServices.length === 0 && (
+                    <p className="text-sm text-gray-400 text-center py-3">{t('common.no_data')}</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
           <div className="lg:col-span-2">
             {loading ? (
-              <LoadingSpinner />
+              <CardSkeleton count={4} />
             ) : pricing.length > 0 ? (
               <div className="space-y-3">
                 {pricing.map((p) => (
-                  <div key={p.id} className="card flex items-center justify-between">
+                  <div key={p.id} className="card flex items-center justify-between hover:shadow-md transition-shadow">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {p.service_name} - {p.country_name} {p.flag_emoji}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {p.operator_name || 'Any Operator'} &middot; {p.provider_name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {p.service_name} - {p.country_name} {p.flag_emoji}
+                        </p>
+                        {p.is_popular && <span className="badge-hot text-xs">HOT</span>}
+                        {p.is_fast && <span className="badge-fast text-xs">FAST</span>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <p className="text-sm text-gray-500">
+                          {p.operator_name || 'Any Operator'} &middot; {p.provider_name}
+                        </p>
+                        {p.success_rate !== undefined && (
+                          <span className="text-xs text-gray-400">
+                            {t('otp.success_rate')}: <SuccessRateBadge rate={p.success_rate} />
+                          </span>
+                        )}
+                        {p.stock !== undefined && (
+                          <span className="text-xs text-gray-400">
+                            {t('otp.stock')}: <StockIndicator stock={p.stock} />
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-lg font-bold text-primary-600">{formatCurrency(p.sell_price)}</span>
@@ -230,7 +337,8 @@ export default function OrderOtp() {
               <div className="card text-center text-gray-500">{t('otp.no_service')}</div>
             ) : (
               <div className="card text-center text-gray-500">
-                {t('otp.select_country')} & {t('otp.select_service')}
+                <HiPhone className="mx-auto mb-3 text-gray-300 dark:text-gray-600" size={48} />
+                <p>{t('otp.select_country')} & {t('otp.select_service')}</p>
               </div>
             )}
           </div>
