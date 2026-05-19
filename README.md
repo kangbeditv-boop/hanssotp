@@ -16,7 +16,7 @@ Platform fullstack untuk layanan OTP dan virtual number, mirip seperti rumahotp.
 ### User
 - Register, login, logout (JWT)
 - Dashboard (saldo, total order, deposit, riwayat)
-- Deposit via QRIS (Tripay / QRISPY)
+- Deposit via QRIS (Pakasir / Tripay / QRISPY)
 - Order OTP (pilih negara, layanan, operator)
 - Realtime OTP via Socket.IO
 - Cancel order & auto refund
@@ -37,7 +37,7 @@ Platform fullstack untuk layanan OTP dan virtual number, mirip seperti rumahotp.
 
 ### Fitur Tambahan
 - Provider adapter pattern (5sim, HeroSMS, Nokosmurah)
-- Payment gateway adapter (Tripay, QRISPY)
+- Payment gateway adapter (Pakasir, Tripay, QRISPY)
 - Auto cancel/refund expired orders (15 menit)
 - OTP polling setiap 15 detik
 - Auto pricing berdasarkan demand
@@ -163,6 +163,12 @@ Default admin:
 Akses admin panel: `https://yourdomain.com/admin/login`
 
 ### Payment Gateway
+
+#### Pakasir (Recommended)
+1. Daftar di [pakasir.com](https://pakasir.com)
+2. Buat Proyek baru, catat **Slug** dan **API Key**
+3. Set webhook URL di Pakasir: `https://yourdomain.com/api/webhooks/pakasir`
+4. Isi di Settings admin atau `.env`
 
 #### Tripay
 1. Daftar di [tripay.co.id](https://tripay.co.id)

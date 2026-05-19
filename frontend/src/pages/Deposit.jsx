@@ -7,7 +7,7 @@ import { formatCurrency } from '../utils/format';
 
 export default function Deposit() {
   const [amount, setAmount] = useState('');
-  const [gateway, setGateway] = useState('tripay');
+  const [gateway, setGateway] = useState('pakasir');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const { t } = useLanguage();
@@ -63,6 +63,7 @@ export default function Deposit() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('deposit.gateway')}</label>
                 <select className="input-field" value={gateway} onChange={(e) => setGateway(e.target.value)}>
+                  <option value="pakasir">Pakasir (QRIS)</option>
                   <option value="tripay">Tripay (QRIS)</option>
                   <option value="qrispy">QRISPY (QRIS)</option>
                 </select>

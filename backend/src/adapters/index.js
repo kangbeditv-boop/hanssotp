@@ -1,5 +1,6 @@
 const TripayGateway = require('./TripayGateway');
 const QrispyGateway = require('./QrispyGateway');
+const PakasirGateway = require('./PakasirGateway');
 const { pool } = require('../config/database');
 const config = require('../config/env');
 
@@ -7,6 +8,7 @@ async function getGatewayConfig(gatewayCode) {
   const settingKeys = {
     tripay: ['tripay_api_key', 'tripay_private_key', 'tripay_merchant_code', 'tripay_mode'],
     qrispy: ['qrispy_api_key', 'qrispy_merchant_id'],
+    pakasir: ['pakasir_api_key', 'pakasir_slug'],
   };
 
   const keys = settingKeys[gatewayCode];
@@ -40,6 +42,11 @@ async function getGateway(gatewayCode) {
       const apiKey = dbConfig.qrispy_api_key || config.qrispy.apiKey;
       const merchantId = dbConfig.qrispy_merchant_id || config.qrispy.merchantId;
       return new QrispyGateway(apiKey, merchantId);
+    }
+    case 'pakasir': {
+      const apiKey = dbConfig.pakasir_api_key || config.pakasir.apiKey;
+      const slug = dbConfig.pakasir_slug || config.pakasir.slug;
+      return new PakasirGateway(apiKey, slug);
     }
     default:
       throw new Error(`Unknown gateway: ${gatewayCode}`);
